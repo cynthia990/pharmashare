@@ -1,88 +1,146 @@
-# Sprint 2 — Coder le domaine PharmaShare
+# Sprint 2 — Entités JPA et repositories
 
-## Objectif et déroulement
+## But de la semaine
 
-Transformer les diagrammes du sprint d'analyse en règles métier exécutables et vérifiables. Durée prévue de cinq jours de travail, à ajuster à la disponibilité des étudiants. Les quatre étudiants travaillent sur le même dépôt.
+Lire les diagrammes de classes et l'ERD, compléter les entités JPA et les repositories laissés vides, puis faire passer les tests fournis. Les quatre missions sont des tâches de développement d'un sprint d'une semaine.
 
-Le dirigeant fournit le projet Maven, les versions, les contrats, les tests et la revue. Chaque étudiant lit ses tests, implémente son exercice, explique ses choix et ouvre une pull request. Les dates et les clés des futurs tickets restent à fixer dans Jira. Ce document prépare les tickets et ne prétend pas qu'ils ont été créés.
+Le périmètre retient Medicament, Pharmacie, Lot et Partenaire. Les champs ci-dessous constituent le contrat de l'exercice, adapté des diagrammes transmis. Les entités complémentaires, la publication complète des stocks, les utilisateurs et les échanges de dons feront l'objet de tickets suivants.
 
-| Étudiant | Mission | Fichiers principaux | Suite à lancer |
+## Consignes communes
+
+1. Cloner https://github.com/profacile/pharmashare et importer le pom.xml avec Java 25.
+2. Partir de develop et créer une branche feature/<prenom>-jpa.
+3. Lire sa classe de test dans domain/src/test/java/be/profacile/pharmashare/domain/repository.
+4. Compléter l'entité avec @Entity et @Table(name = "..."). Ajouter les champs privés et leurs annotations sur les champs.
+5. Chaque entité possède un id Long, annoté @Id et @GeneratedValue(strategy = GenerationType.IDENTITY), ainsi que getId().
+6. Prévoir un constructeur sans argument public ou protégé pour JPA. Les autres champs disposent de getters et setters publics. Pour Boolean habilite, utiliser getHabilite() et setHabilite(Boolean).
+7. Compléter le repository avec extends JpaRepository<Entite, Long>, puis sa méthode de recherche.
+8. Exécuter le test par le bouton Play ou Maven, corriger son code et ouvrir une pull request vers develop. Expliquer un test qui échouait et sa correction.
+
+Les annotations appartiennent à jakarta.persistence. Les noms Java et SQL du tableau sont les références communes pour éviter les différences entre diagrammes et implémentations.
+
+## Cynthia — Medicament et MedicamentRepository
+
+**Situation.** Un médicament est une référence de produit. Le stock et la péremption sont portés par les lots qui lui sont associés.
+
+Fichiers à compléter
+
+- domain/src/main/java/be/profacile/pharmashare/domain/model/Medicament.java
+- domain/src/main/java/be/profacile/pharmashare/domain/repository/MedicamentRepository.java
+
+Table SQL `medicament`.
+
+| Champ Java | Type | Colonne SQL | Obligatoire |
 | --- | --- | --- | --- |
-| Cynthia | Construire les références médicament et pharmacie | `model/Medicament.java`, `model/Pharmacie.java` | `CatalogueTest` |
-| Idriss | Implémenter le cycle de vie d'un lot | `model/Lot.java` | `LotTest` |
-| Jordan | Publier un stock et calculer sa fraîcheur | `model/PublicationStock.java`, `service/PublicationStockService.java` | `PublicationStockServiceTest` |
-| Florent | Contrôler et enregistrer une demande de don | `service/DonService.java` | `DonServiceTest` |
+| id | Long | id | Identifiant généré |
+| codeCnk | String | code_cnk | Oui, unique, longueur 7 |
+| nom | String | nom | Oui |
+| principeActif | String | principe_actif | Oui |
 
-Commande depuis la racine, en remplaçant le nom de la suite
+Mettre @Column(name = "...", nullable = false) sur les trois champs de contenu. codeCnk possède aussi unique = true et length = 7.
+
+Le repository gère Medicament avec un identifiant Long et déclare `Optional<Medicament> findByCodeCnk(String codeCnk)`. Le CNK absent retourne Optional.empty().
+
+**Validation.** MedicamentRepositoryTest vérifie les champs et annotations, la génération de l'identifiant, la sauvegarde/relecture, la recherche CNK, la suppression et le refus d'un CNK dupliqué. Les valeurs sont fictives.
+
+**Livrable.** Entité et repository complétés, test vert et pull request. Expliquer pourquoi le prix et la péremption appartiennent au lot.
+
+## Jordan — Pharmacie et PharmacieRepository
+
+**Situation.** La pharmacie publiera ses disponibilités. Sa date de dernière publication peut être absente tant qu'elle n'a jamais publié.
+
+Fichiers à compléter
+
+- domain/src/main/java/be/profacile/pharmashare/domain/model/Pharmacie.java
+- domain/src/main/java/be/profacile/pharmashare/domain/repository/PharmacieRepository.java
+
+Table SQL `pharmacie`.
+
+| Champ Java | Type | Colonne SQL | Obligatoire |
+| --- | --- | --- | --- |
+| id | Long | id | Identifiant généré |
+| nom | String | nom | Oui |
+| adresse | String | adresse | Oui |
+| dateDernierePublication | LocalDateTime | date_derniere_publication | Non |
+
+Mettre @Column sur chaque champ avec le nom SQL et la nullabilité indiqués. Le repository gère Pharmacie avec un identifiant Long et déclare `List<Pharmacie> findByNomContainingIgnoreCase(String nom)`.
+
+**Validation.** PharmacieRepositoryTest sauvegarde l'officine, vide le contexte JPA, relit son adresse et son horodatage, puis recherche une partie de son nom en majuscules. Une recherche sans résultat retourne une liste vide.
+
+**Livrable.** Entité, repository, test vert et pull request. Expliquer la différence entre date de publication du stock et péremption d'un lot.
+
+## Idriss — Lot, EtatLot et LotRepository
+
+**Situation.** Une pharmacie détient plusieurs lots d'un médicament. Chaque lot possède son numéro, sa péremption, sa quantité et ses prix.
+
+Fichiers à compléter
+
+- domain/src/main/java/be/profacile/pharmashare/domain/model/Lot.java
+- domain/src/main/java/be/profacile/pharmashare/domain/model/EtatLot.java
+- domain/src/main/java/be/profacile/pharmashare/domain/repository/LotRepository.java
+
+Table SQL `lot`.
+
+| Champ Java | Type | Colonne SQL | Obligatoire |
+| --- | --- | --- | --- |
+| id | Long | id | Identifiant généré |
+| numeroLot | String | numero_lot | Oui |
+| datePeremption | LocalDate | date_peremption | Oui |
+| quantite | Integer | quantite | Oui |
+| prixNormal | BigDecimal | prix_normal | Oui |
+| prixReduit | BigDecimal | prix_reduit | Non |
+| statut | EtatLot | statut | Oui |
+| medicament | Medicament | medicament_id | Relation obligatoire |
+| pharmacie | Pharmacie | pharmacie_id | Relation obligatoire |
+
+Utiliser @Column pour les champs simples. Le statut est stocké avec @Enumerated(EnumType.STRING). Les deux relations utilisent @ManyToOne(optional = false) et @JoinColumn(name = "...", nullable = false).
+
+Compléter EtatLot, dans cet ordre, avec A_COMPLETER, PROPOSE, DEMANDE, RESERVE, REMIS, EN_ANOMALIE, RECEPTIONNE et RETIRE.
+
+Le repository gère Lot avec un identifiant Long et déclare `List<Lot> findByPharmacieId(Long pharmacieId)`.
+
+**Validation.** LotRepositoryTest contrôle les mappings et l'énumération, persiste les références puis le lot, vide le contexte JPA et vérifie les données rechargées ainsi que la recherche par pharmacie.
+
+**Dépendance.** Le premier test de structure peut être exécuté sur le code d'Idriss. Le test de persistance nécessite les entités Medicament et Pharmacie livrées par Cynthia et Jordan. Prévoir leur intégration ou une séance commune avant la revue finale.
+
+**Livrable.** Entité, énumération, repository, test vert après intégration et pull request. Expliquer les deux clés étrangères et l'intérêt de BigDecimal pour les prix. Ces prix sont des données de simulation.
+
+## Florent — Partenaire et PartenaireRepository
+
+**Situation.** Un établissement partenaire peut être habilité ou non pour le pilote. La recherche devra retrouver uniquement les partenaires habilités.
+
+Fichiers à compléter
+
+- domain/src/main/java/be/profacile/pharmashare/domain/model/Partenaire.java
+- domain/src/main/java/be/profacile/pharmashare/domain/repository/PartenaireRepository.java
+
+Table SQL `partenaire`.
+
+| Champ Java | Type | Colonne SQL | Obligatoire |
+| --- | --- | --- | --- |
+| id | Long | id | Identifiant généré |
+| nom | String | nom | Oui |
+| type | String | type | Oui |
+| pays | String | pays | Oui |
+| adresse | String | adresse | Oui |
+| habilite | Boolean | habilite | Oui |
+
+Chaque champ simple reçoit @Column(name = "...", nullable = false). Le repository gère Partenaire avec un identifiant Long et déclare `List<Partenaire> findByHabiliteTrue()`.
+
+**Validation.** PartenaireRepositoryTest persiste deux partenaires fictifs, l'un habilité et l'autre non, relit les données depuis la base et vérifie que la recherche retourne uniquement le partenaire habilité.
+
+**Livrable.** Entité, repository, test vert et pull request. Expliquer la différence entre une entité et le repository qui permet de l'enregistrer.
+
+## Exécuter et livrer
 
 ```powershell
-.\mvnw.cmd -pl domain test -Dtest=CatalogueTest
+.\mvnw.cmd clean test-compile
+.\mvnw.cmd -pl domain test -Dtest=MedicamentRepositoryTest
+.\mvnw.cmd verify
 ```
 
-## Cynthia — Références du catalogue
+Remplacer MedicamentRepositoryTest par le nom de sa suite. Les tests démarrent une base H2 en mémoire. Aucun serveur de base externe n'est nécessaire pour ce sprint.
 
-**Situation.** Une officine publiera des lots. Nous devons distinguer le médicament, qui décrit un produit, de la pharmacie, qui décrit son détenteur.
+Les classes de services restent préparées pour le prochain exercice. Les DTO request et response sont placés dans le module rest, qui sera complété avec les contrôleurs. Le package dto ne contient pas les entités.
 
-**À faire.** Ajouter les champs privés et immuables, les validations des constructeurs et les accesseurs prévus. Conserver les UUID reçus. Nettoyer les chaînes avec `strip()`. Les identifiants et libellés sont obligatoires. Le code CNK comporte exactement sept chiffres ASCII après nettoyage. Le code postal belge comporte exactement quatre chiffres et commence par un chiffre de 1 à 9. Cette validation de format ne vérifie pas l'existence dans un référentiel officiel.
-
-**Exemple.** `" 1234567 "` devient `"1234567"`. Un nom composé uniquement d'espaces est refusé. Chaque entrée invalide déclenche `IllegalArgumentException`.
-
-**Livrable.** Les deux modèles, la suite `CatalogueTest` verte et une explication de la différence entre un produit et un lot. Ajouter au moins un exemple personnel de donnée invalide.
-
-## Idriss — Cycle de vie du lot
-
-**Situation.** Une pharmacie déclare dix boîtes d'un lot fictif. Ce lot doit rester identifiable et suivre les étapes du don.
-
-**À faire.** Conserver l'identité du lot, ses références médicament et pharmacie, son numéro nettoyé, sa quantité, sa péremption, son état et le bénéficiaire. Les UUID, le numéro, les dates sont obligatoires. La quantité est strictement positive. À la déclaration, la péremption doit être strictement postérieure à la date fournie. Le lot commence en `A_COMPLETER`, sans bénéficiaire.
-
-| Méthode | État de départ autorisé | Résultat |
-| --- | --- | --- |
-| `proposer(justificatif, date)` | `A_COMPLETER` | `PROPOSE`, référence de justificatif obligatoire |
-| `demander(partenaireId, date)` | `PROPOSE` | `DEMANDE`, bénéficiaire conservé |
-| `reserver(date)` | `DEMANDE` | `RESERVE` |
-| `remettre(date)` | `RESERVE` | `REMIS` |
-| `signalerAnomalie()` | `REMIS` | `EN_ANOMALIE` |
-| `confirmerReception(date)` | `REMIS` ou `EN_ANOMALIE` | `RECEPTIONNE` |
-| `retirer()` | `A_COMPLETER`, `PROPOSE`, `DEMANDE`, `RESERVE` ou `EN_ANOMALIE` | `RETIRE` |
-
-Les méthodes recevant une date vérifient que le lot est encore utilisable selon la convention du sprint. Un état incompatible ou une péremption atteinte déclenche `IllegalStateException`. Une donnée obligatoire absente déclenche `IllegalArgumentException`. Une opération refusée conserve l'état et le bénéficiaire précédents. `RECEPTIONNE` et `RETIRE` sont terminaux. Éviter un setter permettant de contourner les transitions.
-
-**Livrable.** `Lot`, la suite `LotTest` verte et une table reliant chaque méthode au diagramme d'états. Les contrôles d'habilitation du partenaire sont dans le service de Florent.
-
-## Jordan — Publication et fraîcheur du stock
-
-**Situation.** Une officine publie son stock chaque soir. Une publication échouée doit laisser la dernière publication réussie disponible avec son horodatage.
-
-**À faire.** Implémenter un `PublicationStock` immuable avec copie défensive de la liste. Ses paramètres sont obligatoires et la liste ne contient pas de valeur nulle. Conserver `pharmacieId`, `publieLe` et les offres accessibles par leurs accesseurs.
-
-Dans `PublicationStockService`, conserver le repository et l'horloge injectés. Refuser les dépendances nulles. `publier` valide toute la liste avant sauvegarde, refuse les identifiants de lot dupliqués et les entrées nulles, écarte les offres dont la péremption est atteinte à `LocalDate.now(clock)`, puis crée une publication datée avec `clock.instant()`. Appeler `save` une seule fois après validation. Une liste vide est valide et remplace les anciennes disponibilités. Une erreur de validation déclenche `IllegalArgumentException` et ne déclenche aucune sauvegarde.
-
-Pour `fraicheur`, calculer l'âge avec l'horloge fournie. Refuser une date nulle ou future. Une publication de moins de 24 h est `A_JOUR`. De 24 h à 72 h incluses, elle est `A_CONFIRMER`. Au-delà de 72 h, elle est `MASQUE`. Comparer des durées précises et éviter l'arrondi en heures.
-
-**Livrable.** Le modèle et le service, la suite `PublicationStockServiceTest` verte et une explication des cas exactement à 24 h et à 72 h. Les prix, imports CSV et tâches planifiées seront traités ultérieurement.
-
-## Florent — Demander un don via les ports
-
-**Situation.** Un partenaire veut demander un lot. Le service doit vérifier son existence et son habilitation avant de modifier le lot.
-
-**À faire.** Conserver les deux repositories et l'horloge reçus dans le constructeur. Les dépendances et identifiants sont obligatoires, sinon lever `IllegalArgumentException`. Rechercher le partenaire et le lot. Une référence inconnue déclenche `NoSuchElementException`. Un partenaire non habilité déclenche `IllegalStateException`.
-
-Une fois les contrôles réalisés, appeler `lot.demander(partenaireId, LocalDate.now(clock))`, puis sauvegarder le lot une seule fois. Un refus de contrôle ou de transition ne sauvegarde et ne modifie rien. Les règles de transition sont portées par `Lot` et sont réutilisées par le service.
-
-**Dépendance.** Les tests de succès de Florent nécessitent le modèle de lot d'Idriss. Le contrat permet de compiler et de travailler sur le service avant cette livraison. Idriss prépare une petite pull request avec construction, proposition et demande dès le début du sprint. Florent et Idriss réalisent ensuite une revue croisée.
-
-**Livrable.** Le service, la suite `DonServiceTest` verte après intégration de `Lot`, et une explication du rôle de chaque port. Les classes de repository sont des interfaces fournies. Les doubles en mémoire sont déjà écrits dans les tests.
-
-## Conventions pédagogiques à confirmer
-
-Les captures montrent deux parcours complémentaires, publication publique du stock et pilote de don entre professionnels. Ce sprint implémente une partie de chacun. Il n'implémente pas encore les utilisateurs, rôles, documents téléversés, réservations séparées, prix ou mouvements d'historique de l'ERD.
-
-La péremption est ici une date complète et le lot devient indisponible dès que `date >= peremption`. C'est une convention de prototype à faire valider avant utilisation réelle, notamment pour les étiquettes exprimées en mois et année. La référence de justificatif est une chaîne fictive.
-
-Le diagramme d'états mentionne des délais automatiques de 48 h et 72 h et un retour à `PROPOSE`. Leur point de départ et les acteurs doivent être précisés. Ces automatismes feront l'objet d'un ticket après décision. La confirmation après anomalie représente la décision humaine de conformité du pilote.
-
-Les tests de ce sprint travaillent en mémoire et sur un seul appel à la fois. La persistance ajoutera transactions, gestion d'échec de sauvegarde, verrouillage concurrent et idempotence des requêtes avant exposition d'une API. Une suite verte ne prouve pas l'autorisation d'une opération pharmaceutique réelle.
-
-## Définition de terminé
-
-Le code respecte le contrat et ses règles, les tests ciblés passent, puis la suite complète après intégration. L'étudiant explique un parcours de succès et un refus. Le domaine conserve son indépendance envers Spring et JPA. La pull request comprend la référence du ticket Jira une fois créé. Le dirigeant relit avant fusion.
+La revue finale vérifie les quatre suites vertes, la compréhension du mapping, la cohérence avec le diagramme et la pull request de chaque étudiant. Tout écart entre le contrat ci-dessus et un diagramme plus récent doit être signalé dans le ticket avant de changer le contrat de test.

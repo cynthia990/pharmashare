@@ -1,9 +1,6 @@
 package be.profacile.pharmashare.domain.repository;
 
-import be.profacile.pharmashare.domain.model.Partenaire;
-import java.util.Optional;
-import java.util.UUID;
-
+/** Florent — compléter le contrat Spring Data indiqué dans docs/sprint-2.md. */
 public interface PartenaireRepository {
-    Optional<Partenaire> findById(UUID id);
+    // TODO : héritage JpaRepository et méthode de recherche.
 }

@@ -1,76 +1,77 @@
 # PharmaShare
 
-Squelette pédagogique du backend **PharmaFacile**, développé par PROFACILE SRL avec Cynthia, Jordan, Florent et Idriss. Sprint 2 de développement du domaine, préparé le 19 novembre 2026. Les dates effectives du sprint seront fixées dans Jira.
+Backend pédagogique de PharmaFacile, PROFACILE SRL. Java 25, Spring Boot 4.1.2, Maven Wrapper 3.9.16.
 
-## Démarrer
+## Organisation
 
-Installer un JDK 25 et définir `JAVA_HOME` vers ce JDK. Importer le `pom.xml` racine comme projet Maven dans IntelliJ. Utiliser le Maven Wrapper du dépôt.
+```text
+domain/
+  src/main/java/be/profacile/pharmashare/domain/
+    model/          entités JPA et énumérations à compléter
+    repository/     interfaces Spring Data à compléter
+    service/        services laissés vides pour l'exercice suivant
+  src/test/java/be/profacile/pharmashare/domain/
+    repository/     tests complets fournis aux étudiants
+    support/        infrastructure de test fournie
+rest/
+  src/main/java/be/profacile/pharmashare/rest/dto/
+    request/        futurs DTO de requête
+    response/       futurs DTO de réponse
+bootstrap/          démarrage Spring Boot fourni
+docs/sprint-2.md    consignes détaillées et contrat des champs
+```
+
+Le module bootstrap dépend de rest, qui dépend de domain. Cette organisation suit le choix pédagogique de placer les entités JPA et les repositories Spring Data dans domain. La séparation entre modèle métier pur et entités de persistance pourra être étudiée ensuite lors du travail sur les ports et adaptateurs de l'architecture hexagonale.
+
+## Exécuter les exercices
+
+Installer un JDK 25 et sélectionner ce JDK dans IntelliJ pour le projet, Maven et les tests. Importer le pom.xml racine comme projet Maven.
 
 ```powershell
 .\mvnw.cmd --version
-.\mvnw.cmd test-compile
+.\mvnw.cmd clean test-compile
+.\mvnw.cmd -pl domain test -Dtest=MedicamentRepositoryTest
 .\mvnw.cmd verify
 ```
 
-Sur Linux et macOS, utiliser `sh mvnw` à la place de `.\mvnw.cmd`.
+Sous Linux et macOS, utiliser `sh mvnw`.
 
-`test-compile` doit réussir. `verify` doit initialement échouer sur les exercices contenant `TODO`. Lire le nom du test, son assertion et le contrat dans [la fiche de sprint](docs/sprint-2.md), puis implémenter la règle métier. Un échec `UnsupportedOperationException` est attendu au départ. Une erreur de compilation ou de téléchargement Maven indique un autre problème.
+Les classes de production et les repositories sont laissés vides. Les tests compilent grâce à une infrastructure de test qui inspecte les champs au moment de l'exécution. Ainsi, le bouton Play dans IntelliJ fonctionne dès l'import du projet et signale par exemple « Ajouter @Entity sur Medicament » ou « Ajouter le champ Medicament.id de type Long ».
 
-Les contrats de méthode sont fournis pour que chacun puisse coder et compiler sans attendre les autres. Garder leurs signatures. Implémenter les corps et les champs privés nécessaires. Les tests fournis font partie des critères de validation. Toute modification de ces tests doit être relue par le dirigeant. Ajouter des tests personnels est encouragé.
+Les tests vérifient ensuite les annotations JPA, les types, les accesseurs, l'héritage des repositories, la sauvegarde et la relecture sur H2 ainsi que les méthodes de recherche. La base de test est créée et détruite pour chaque exercice. H2 ne remplace pas une validation PostgreSQL avant déploiement.
 
-## Architecture
+Les étudiants implémentent les fichiers de leur mission et conservent les tests fournis. Une modification des critères de test nécessite la revue du dirigeant.
 
-```text
-pharmashare/
-  pom.xml                         agrégateur et versions communes
-  domain/
-    src/main/java/be/profacile/pharmashare/domain/
-      model/                      objets et règles métier
-      repository/                 interfaces des ports sortants
-      service/                    orchestration métier
-    src/test/java/                tests et doubles en mémoire
-  bootstrap/                      démarrage Spring Boot
-  docs/sprint-2.md                 consignes et contrats
-```
+## Répartition du sprint
 
-Le module `domain` utilise Java et JUnit pour ses tests. Ses modèles ne dépendent ni de Spring, ni de JPA, ni d'une base. Le module `bootstrap` dépend du domaine. Les adaptateurs REST et PostgreSQL seront ajoutés après ce sprint. Les repositories du domaine sont des interfaces dont les signatures sont fournies. Leur implémentation de persistance constituera une tâche d'un prochain sprint.
+| Étudiant | Entité et repository | Test à exécuter |
+| --- | --- | --- |
+| Cynthia | Medicament, MedicamentRepository | MedicamentRepositoryTest |
+| Jordan | Pharmacie, PharmacieRepository | PharmacieRepositoryTest |
+| Idriss | Lot, EtatLot, LotRepository | LotRepositoryTest |
+| Florent | Partenaire, PartenaireRepository | PartenaireRepositoryTest |
 
-Pour vérifier uniquement le démarrage technique avec le domaine compilé et les exercices encore rouges
+Les [contrats détaillés](docs/sprint-2.md) précisent tous les champs, les annotations attendues, les recherches et les critères de livraison. Le périmètre de ce sprint porte sur quatre entités principales issues des diagrammes. Les autres entités seront ajoutées avec leurs propres exercices.
+
+## Validation et livraison
+
+Chaque étudiant crée une branche `feature/<prenom>-jpa` depuis `develop`, exécute son test puis ouvre une pull request vers `develop`. Les contributions sont intégrées progressivement dans `develop`. La branche `main` contient la base fournie pour ce sprint. Le dirigeant relit avant fusion. Le test de persistance du lot nécessite les entités Medicament et Pharmacie complétées. Les trois autres exercices peuvent être validés indépendamment.
+
+La CI distingue « Squelette technique » et « Exercices métier ». Le premier vérifie la compilation et le démarrage Spring Boot. Le second reste rouge tant que les exercices sont incomplets. Les rapports sont conservés sept jours.
+
+Le fichier CODEOWNERS désigne le compte profacile pour la revue des tests et des fichiers de configuration. Une protection bloquante de main reste à configurer dans GitHub.
+
+Pour vérifier uniquement le squelette technique
 
 ```powershell
 .\mvnw.cmd -pl bootstrap -am test -Dtest=PharmaShareApplicationTest "-Dsurefire.failIfNoSpecifiedTests=false"
 ```
 
-Pour créer le JAR de démarrage
-
-```powershell
-.\mvnw.cmd package -DskipTests
-java -jar bootstrap/target/pharmashare-bootstrap-0.1.0-SNAPSHOT.jar
-```
-
-Le bootstrap démarre, puis termine normalement car aucun serveur HTTP ni traitement permanent n'est encore configuré.
-
-## Travail en équipe
-
-Chaque étudiant crée une branche `feature/<prenom>-<sujet>` depuis `main`, puis ouvre une pull request vers `main`. Une revue par le dirigeant est nécessaire avant fusion. Les tests métier seront rouges sur `main` tant que tous les exercices ne sont pas livrés. Vérifier d'abord sa suite ciblée, puis la suite complète à l'intégration. La CI distingue le contrôle « Squelette technique », qui doit passer, des « Exercices métier », initialement rouges. Elle conserve les rapports JUnit même en cas d'échec.
-
-Une fois le dépôt créé, configurer sur GitHub une règle de protection de `main` et la revue par le dirigeant, selon les fonctions disponibles pour l'organisation. Le fichier de workflow seul n'empêche pas les modifications des tests ou les fusions directes.
-
-## Versions retenues
-
-- Java 25 LTS, sans fonctionnalités preview.
-- Spring Boot 4.1.2, version stable affichée par le projet officiel lors de la préparation.
-- Maven Wrapper 3.9.16, dans la branche 3.9 demandée.
-
-Le support longue durée Spring dépend des offres et calendriers de l'éditeur. La version retenue n'est pas présentée comme un abonnement LTS acquis.
+Le bootstrap utilise actuellement le mode sans serveur HTTP. Les contrôleurs, DTO, services et la configuration PostgreSQL seront réalisés dans les exercices suivants.
 
 Sources de versions consultées le 19 novembre 2026
 
-- [Spring Boot et version stable](https://spring.io/projects/spring-boot/)
+- [Spring Boot](https://spring.io/projects/spring-boot/)
 - [Compatibilité Java et Maven](https://docs.spring.io/spring-boot/system-requirements.html)
-- [Distributions Maven](https://maven.apache.org/download.cgi)
-- [Java 25 et support](https://www.oracle.com/java/technologies/java-se-support-roadmap.html)
-
-## Périmètre du prototype
-
-Les données et justificatifs sont fictifs. Les règles de date sont des conventions d'exercice documentées. Les fonctions de vente, de prix, d'alternative médicamenteuse, de transfert réel et de validation professionnelle restent à spécifier avant une mise en service.
+- [Maven](https://maven.apache.org/download.cgi)
+- [Java et support](https://www.oracle.com/java/technologies/java-se-support-roadmap.html)

@@ -16,7 +16,7 @@
     <java.version>25</java.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
-  <modules><module>domain</module><module>bootstrap</module></modules>
+  <modules><module>domain</module><module>rest</module><module>bootstrap</module></modules>
   <build>
     <plugins>
       <plugin>

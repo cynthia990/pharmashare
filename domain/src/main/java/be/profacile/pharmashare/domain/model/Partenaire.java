@@ -1,12 +1,6 @@
 package be.profacile.pharmashare.domain.model;
 
-import java.util.UUID;
-
-/** Contrat fourni pour le service de Florent. Habilitation fictive du pilote. */
-public record Partenaire(UUID id, boolean habilite) {
-    public Partenaire {
-        if (id == null) {
-            throw new IllegalArgumentException("Identifiant du partenaire obligatoire");
-        }
-    }
+/** Florent — compléter les annotations JPA, les champs et les accesseurs selon docs/sprint-2.md. */
+public class Partenaire {
+    // TODO : entité, table, identifiant, colonnes et éventuelles relations.
 }
