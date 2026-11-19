@@ -52,7 +52,7 @@ Le bootstrap démarre, puis termine normalement car aucun serveur HTTP ni traite
 
 ## Travail en équipe
 
-Chaque étudiant crée une branche `feature/<prenom>-<sujet>` depuis `main`, puis ouvre une pull request vers `main`. Une revue par le dirigeant est nécessaire avant fusion. Les tests métier seront rouges sur `main` tant que tous les exercices ne sont pas livrés. Vérifier d'abord sa suite ciblée, puis la suite complète à l'intégration. La CI transmet les vrais résultats et conserve les rapports JUnit même en cas d'échec.
+Chaque étudiant crée une branche `feature/<prenom>-<sujet>` depuis `main`, puis ouvre une pull request vers `main`. Une revue par le dirigeant est nécessaire avant fusion. Les tests métier seront rouges sur `main` tant que tous les exercices ne sont pas livrés. Vérifier d'abord sa suite ciblée, puis la suite complète à l'intégration. La CI distingue le contrôle « Squelette technique », qui doit passer, des « Exercices métier », initialement rouges. Elle conserve les rapports JUnit même en cas d'échec.
 
 Une fois le dépôt créé, configurer sur GitHub une règle de protection de `main` et la revue par le dirigeant, selon les fonctions disponibles pour l'organisation. Le fichier de workflow seul n'empêche pas les modifications des tests ou les fusions directes.
 
