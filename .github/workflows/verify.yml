@@ -9,8 +9,8 @@ jobs:
     name: Squelette technique
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '25'
@@ -19,7 +19,7 @@ jobs:
         run: sh mvnw -B -ntp -pl bootstrap -am test -Dtest=PharmaShareApplicationTest -Dsurefire.failIfNoSpecifiedTests=false
       - name: Conserver les rapports JUnit
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rapports-techniques
           path: 'bootstrap/target/surefire-reports/'
@@ -28,8 +28,8 @@ jobs:
     name: Exercices métier
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '25'
@@ -38,7 +38,7 @@ jobs:
         run: sh mvnw -B -ntp -pl domain verify
       - name: Conserver les rapports JUnit
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rapports-metier
           path: 'domain/target/surefire-reports/'
