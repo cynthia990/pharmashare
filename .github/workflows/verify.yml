@@ -1,0 +1,25 @@
+name: Vérification PharmaShare
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Compiler et exécuter tous les tests
+        run: sh mvnw -B -ntp verify
+      - name: Conserver les rapports JUnit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapports-tests
+          path: '**/target/surefire-reports/'
+          retention-days: 7
